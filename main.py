@@ -23,17 +23,13 @@ class NotAuthenticatedException(Exception):
 
 def exc_handler(request, exc):
     return RedirectResponse(url='/login')
-
 manager = LoginManager(SECRET, '/api/login', custom_exception=NotAuthenticatedException, use_cookie=True)
-
 manager.not_authenticated_exception = NotAuthenticatedException
-
 app.add_exception_handler(NotAuthenticatedException, exc_handler)
 
 @manager.user_loader
 def query_user(user_id: str):
     return DB['users'].get(user_id)
-
 
 @app.post('/api/login')
 async def login(data: OAuth2PasswordRequestForm = Depends()):
@@ -42,23 +38,31 @@ async def login(data: OAuth2PasswordRequestForm = Depends()):
 
     user = query_user(email)
     if not user:
-        raise InvalidCredentialsException
+        response = RedirectResponse(url='/login', status_code=302)
+        return response
     elif password != user['password']:
-        raise InvalidCredentialsException
-
+        response = RedirectResponse(url='/login', status_code=302)
+        return response
     access_token = manager.create_access_token(
         data={'sub': email}
     )
     response = RedirectResponse(url='/', status_code=302)
-    manager.set_cookie(response, access_token.decode())
+    manager.set_cookie(response, access_token)
     return response
 
 @app.get("/login")
 async def read_form(request: Request):
     return templates.TemplateResponse('login.html', context={'request': request})
 
+@app.exception_handler(404)
+async def page_not_test(request: Request, idk):
+    return templates.TemplateResponse('404.html', context={'request': request})
 
 @app.get('/')
+async def index(user = Depends(manager)):
+    response = RedirectResponse(url='/valves', status_code=302)
+    return response
+
+@app.get('/valves')
 async def index(request: Request, user = Depends(manager)):
     return templates.TemplateResponse('crud.html', context={'request': request})
-
