@@ -1,5 +1,3 @@
-from os import access
-from types import MethodType
 from fastapi_login import LoginManager
 from fastapi import FastAPI, Request, Depends 
 from fastapi.security import OAuth2PasswordRequestForm
